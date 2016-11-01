@@ -5,7 +5,7 @@ use std::slice;
 
 use std::os::unix::prelude::*;
 
-use libc::{EINVAL,ENOMEM};
+use libc::{EINVAL,ENOMEM, c_void, size_t};
 
 /// The data type for raw pixel data.
 pub type RawPixel = u16;
@@ -55,6 +55,24 @@ impl Image {
         ::error::os::clear_errno();
 
         match unsafe { ::libraw::libraw_open_file(image.data, filename.as_ptr()) } {
+            ::libraw::LIBRAW_SUCCESS => Ok(image),
+            ::libraw::LIBRAW_IO_ERROR => {
+                match ::error::os::errno() {
+                    0 => Err(::error::from_libraw(::libraw::LIBRAW_IO_ERROR)),
+                    errno => Err(::error::from_raw_os_error(errno)),
+                }
+            },
+            err => Err(::error::from_libraw(err)),
+        }
+    }
+
+    /// Opens the raw image from a buffer in memory.
+    pub fn open_buffer(buffer: &[u8]) -> ::Result<Image> {
+        let image = try!(Image::new());
+
+        ::error::os::clear_errno();
+
+        match unsafe { ::libraw::libraw_open_buffer(image.data, buffer.as_ptr() as *mut c_void, buffer.len() as size_t) } {
             ::libraw::LIBRAW_SUCCESS => Ok(image),
             ::libraw::LIBRAW_IO_ERROR => {
                 match ::error::os::errno() {
