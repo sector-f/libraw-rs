@@ -238,6 +238,10 @@ impl<'a, T> Pixmap<'a, T> where T: Clone + 'static {
     pub fn pixels(&'a self) -> Pixels<'a, T> {
         Pixels::new(self)
     }
+
+    pub fn raw_data(&'a self) -> &'a [T] {
+        self.pixels
+    }
 }
 
 /// Iterates over pixels in a pixmap.
